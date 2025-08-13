@@ -1,0 +1,115 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام الإنذار المبكر للسيول</title>
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <!-- Leaflet PolylineDecorator لرسم الأسهم -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-polylinedecorator/1.7.0/leaflet.polylineDecorator.min.js"></script>
+
+    <style>
+        body { margin: 0; font-family: 'Tahoma', sans-serif; }
+        #map { position: absolute; top: 0; bottom: 0; right: 300px; left: 0; }
+        #sidebar {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 100%;
+            background-color: #1e1e1e;
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        h2 { margin-top: 0; color: #ffcc00; }
+        .alert {
+            background-color: #333;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            animation: pulse 2s infinite;
+        }
+        .alert.high { border-left: 5px solid red; }
+        .alert.medium { border-left: 5px solid orange; }
+        .alert.low { border-left: 5px solid yellow; }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 5px red; }
+            50% { box-shadow: 0 0 15px red; }
+            100% { box-shadow: 0 0 5px red; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div id="sidebar">
+    <h2>التحذيرات النشطة</h2>
+    <div class="alert high">
+        <b>الرياض</b><br> مستوى الخطورة: عالي<br> وقت التنبيه: 10:30 صباحًا<br> السكان المتأثرون: 1,200
+    </div>
+    <div class="alert medium">
+        <b>جدة</b><br> مستوى الخطورة: متوسط<br> وقت التنبيه: 11:00 صباحًا<br> السكان المتأثرون: 850
+    </div>
+    <div class="alert high">
+        <b>أبها</b><br> مستوى الخطورة: عالي<br> وقت التنبيه: 09:45 صباحًا<br> السكان المتأثرون: 600
+    </div>
+    <div class="alert low">
+        <b>الدمام</b><br> مستوى الخطورة: منخفض<br> وقت التنبيه: 12:15 مساءً<br> السكان المتأثرون: 400
+    </div>
+</div>
+
+<script>
+    var map = L.map('map').setView([23.8859, 45.0792], 6);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    var floodPoints = [
+        {lat: 24.7136, lng: 46.6753, city: "الرياض", level: "عالي", time: "10:30 صباحًا"},
+        {lat: 21.3891, lng: 39.8579, city: "جدة", level: "متوسط", time: "11:00 صباحًا"},
+        {lat: 18.2164, lng: 42.5053, city: "أبها", level: "عالي", time: "09:45 صباحًا"},
+        {lat: 26.4207, lng: 50.0888, city: "الدمام", level: "منخفض", time: "12:15 مساءً"}
+    ];
+
+    function getColor(level) {
+        if (level === "عالي") return "red";
+        if (level === "متوسط") return "orange";
+        return "yellow";
+    }
+
+    floodPoints.forEach(function(point) {
+        var marker = L.circleMarker([point.lat, point.lng], {
+            radius: 12,
+            fillColor: getColor(point.level),
+            color: "#000",
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.8
+        }).addTo(map);
+        marker.bindPopup("<b>المدينة:</b> " + point.city + "<br><b>مستوى الخطورة:</b> " + point.level + "<br><b>وقت التنبيه:</b> " + point.time);
+
+        // إضافة مسار وهمي لتدفق المياه مع أسهم
+        var path = [
+            [point.lat, point.lng],
+            [point.lat - 0.5, point.lng + 0.5]
+        ];
+        var polyline = L.polyline(path, {color: getColor(point.level), weight: 3}).addTo(map);
+        L.polylineDecorator(polyline, {
+            patterns: [
+                {offset: 25, repeat: 50, symbol: L.Symbol.arrowHead({pixelSize: 10, polygon: false, pathOptions: {stroke: true, color: getColor(point.level)}})}
+            ]
+        }).addTo(map);
+    });
+</script>
+
+</body>
+</html>
